@@ -1,0 +1,61 @@
+---
+- name: Fetch Token from Initial Server
+  ansible.builtin.synchronize:
+    src: /var/lib/rancher/k3s/server/token
+    dest: /home/vagrant    
+  delegate_to: "{{ groups['server_initial'][0] }}"
+  when: inventory_hostname != groups['server_initial'][0]
+
+- name: Set Token Variable
+  ansible.builtin.shell: 
+    cmd: "K3s_TOKEN=$(cat /home/vagrant/token)"
+  delegate_to: "{{ inventory_hostname }}"
+  when: inventory_hostname != groups['server_initial'][0]
+
+- name: Check if k3s is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_installed
+
+- name: Uninstall k3s if already installed
+  ansible.builtin.shell: /usr/local/bin/k3s-uninstall.sh
+  args:
+    executable: /bin/bash
+  when: k3s_installed.stat.exists
+
+- name: Wait for First Server Node to be Ready
+  ansible.builtin.shell:
+    cmd: "kubectl get node {{ k3s_node_name }} -o=jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'"
+  register: k3s_node_ready
+  until: k3s_node_ready.stdout == "True"
+  retries: 12
+  delay: 10
+  vars:
+    k3s_node_name: "server1"
+  delegate_to: "{{ groups['server_initial'][0] }}"
+  when: inventory_hostname != groups['server_initial'][0]
+
+- name: Run k3s Installation Script
+  ansible.builtin.shell:
+    cmd: |
+      curl -sfL https://get.k3s.io | \
+      {% if role == 'agent' %}
+      K3S_TOKEN=$(cat token) sh -s - agent --server https://192.168.56.21:6443
+      {% else %}
+      {% if role == 'init' %}
+      sh -s - server --cluster-init --tls-san=https://{{ tls_san }}:6443 \
+      {% elif role == 'add' %}
+      K3S_TOKEN=$(cat token) sh -s - server --server https://192.168.56.11:6443 --tls-san={{ tls_san }} --node-external-ip=192.168.56.11 \
+      {% endif %}
+      --flannel-iface={{ flannel_interface }} --write-kubeconfig-mode="644"
+      {% endif %}
+  register: k3s_installation
+
+- name: Print k3s Installation Script command
+  ansible.builtin.debug:
+    msg: "{{ k3s_installation.cmd }}"
+
+- name: Check if K3s installation succeeded
+  debug:
+    msg: "K3s installed successfully"
+  when: k3s_installation.rc == 0

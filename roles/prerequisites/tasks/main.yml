@@ -1,0 +1,47 @@
+---
+- name: Install Required Packages
+  apt:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - iptables-persistent
+      - sshpass
+      - figlet
+- name: Apply UFW Rules for K3s Ports
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+  loop:
+    - 6443
+    - 2379
+    - 2380
+- name: Allow Traffic from Pods (10.42.0.0/16) & Services (10.43.0.0/16)
+  ufw:
+    rule: allow
+    from_ip: "{{ item }}"
+  loop:
+    - 10.42.0.0/16
+    - 10.43.0.0/16
+    
+- name: Disable UFW
+  ansible.builtin.ufw:
+    state: disabled
+
+- name: Add clear to .profile
+  ansible.builtin.lineinfile:
+    path: "/home/vagrant/.profile"
+    line: "clear"
+    create: yes
+  become: true
+
+- name: Add screenfetch to .profile
+  ansible.builtin.lineinfile:
+    path: "/home/vagrant/.profile"
+    line: "figlet -k $(hostname)"
+    create: yes
+  become: true

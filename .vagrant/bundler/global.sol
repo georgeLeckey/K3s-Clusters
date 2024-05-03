@@ -1,0 +1,1 @@
+{"dependencies":[["vagrant-reload",["= 0.0.1"]],["net-ssh",[">= 2.6.5","< 8.0.0"]],["net-scp",[">= 1.1"]],["log4r",["~> 1.1"]],["vagrant-scp",["= 0.5.9"]],["vagrant-vboxmanage",["= 0.0.2"]],["rake",[">= 0"]],["virtualbox_WSL2",["= 0.1.3"]]],"checksum":"3c0da02b666657c6f99c2b9f25b021e5b86cd125d7d9d12edfc482e98ac00a5b","vagrant_version":"2.4.1"}

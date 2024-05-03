@@ -1,0 +1,50 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: Run Prerequisites
+      include_role:
+        name: prerequisites
+
+- hosts: server_initial
+  become: true
+  tasks:
+    - name: Initialise first server in cluster
+      include_role:
+        name: k3s_nodes
+      vars:
+        role: init
+        tls_san: 192.168.56.100
+        flannel_interface: eth1
+    - name: Change Token Permissions
+      ansible.builtin.file:
+        path: /var/lib/rancher/k3s/server/token
+        mode: '0644'
+      delegate_to: "{{ groups['server_initial'][0] }}"
+
+- hosts: server_additional
+  become: true
+  tasks:
+    - name: Initialise additional servers and add to cluster
+      include_role:
+        name: k3s_nodes
+      vars:
+        role: add
+        tls_san: 192.168.56.100
+        flannel_interface: eth1
+
+- hosts: loadBalancers
+  become: true
+  tasks:
+    - name: Install and Set Up nginx
+      include_role:
+        name: load_balancer
+
+- hosts: agents
+  become: true
+  tasks:
+    - name: Initialise Agent Node
+      include_role:
+        name: k3s_nodes
+      vars:
+        role: agent

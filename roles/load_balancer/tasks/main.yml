@@ -1,0 +1,20 @@
+---
+- name: Install Required Packages
+  apt:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+      - nginx
+
+- name: Create nginx.conf file
+  ansible.builtin.template:
+    src: templates/nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+  become: true
+
+- name: Start Nginx service
+  ansible.builtin.service:
+    name: nginx
+    state: started
+  become: true
