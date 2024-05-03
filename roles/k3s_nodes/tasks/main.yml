@@ -17,11 +17,21 @@
     path: /usr/local/bin/k3s
   register: k3s_installed
 
-- name: Uninstall k3s if already installed
+- name: Uninstall k3s Server if already installed
   ansible.builtin.shell: /usr/local/bin/k3s-uninstall.sh
   args:
     executable: /bin/bash
-  when: k3s_installed.stat.exists
+  when: 
+  - k3s_installed.stat.exists
+  - inventory_hostname in groups['servers']
+
+- name: Uninstall k3s agent if already installed
+  ansible.builtin.shell: /usr/local/bin/k3s-agent-uninstall.sh
+  args:
+    executable: /bin/bash
+  when: 
+  - k3s_installed.stat.exists
+  - inventory_hostname in groups['agents']
 
 - name: Wait for First Server Node to be Ready
   ansible.builtin.shell:
@@ -39,16 +49,18 @@
   ansible.builtin.shell:
     cmd: |
       curl -sfL https://get.k3s.io | \
-      {% if role == 'agent' %}
-      K3S_TOKEN=$(cat token) sh -s - agent --server https://192.168.56.21:6443
-      {% else %}
       {% if role == 'init' %}
       sh -s - server --cluster-init --tls-san=https://{{ tls_san }}:6443 \
+      {% else %}
+      K3S_TOKEN=$(cat token) sh -s \
+      {% if role == 'agent' %}
+        - agent --server https://192.168.56.21:6443 \
       {% elif role == 'add' %}
-      K3S_TOKEN=$(cat token) sh -s - server --server https://192.168.56.11:6443 --tls-san={{ tls_san }} --node-external-ip=192.168.56.11 \
+       - server --server https://192.168.56.11:6443 --tls-san={{ tls_san }} \
       {% endif %}
-      --flannel-iface={{ flannel_interface }} --write-kubeconfig-mode="644"
+       --node-external-ip=192.168.56.11 \
       {% endif %}
+      --flannel-iface=eth1 {% if role != 'agent' %} --write-kubeconfig-mode="644" {% endif %}
   register: k3s_installation
 
 - name: Print k3s Installation Script command

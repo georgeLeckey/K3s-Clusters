@@ -15,7 +15,6 @@
       vars:
         role: init
         tls_san: 192.168.56.100
-        flannel_interface: eth1
     - name: Change Token Permissions
       ansible.builtin.file:
         path: /var/lib/rancher/k3s/server/token
@@ -31,7 +30,6 @@
       vars:
         role: add
         tls_san: 192.168.56.100
-        flannel_interface: eth1
 
 - hosts: loadBalancers
   become: true
