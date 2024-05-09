@@ -48,9 +48,15 @@
       {% if role == 'init' %}
       sh -s - server --cluster-init --tls-san=https://{{ tls_san }}:6443 \
       {% else %}
-      K3S_TOKEN=$(cat token) sh -s - server --server https://192.168.56.11:6443 --tls-san={{ tls_san }} --node-external-ip=192.168.56.11 \
+      K3S_TOKEN=$(cat token) sh -s \
+      {% if role == 'agent' %}
+        - agent --server https://192.168.56.11:6443 \
+      {% elif role == 'add' %}
+       - server --server https://192.168.56.11:6443 --tls-san={{ tls_san }} \
       {% endif %}
-      --flannel-iface=eth1 --write-kubeconfig-mode="644"
+       --node-external-ip=192.168.56.11 \
+      {% endif %}
+      --flannel-iface=eth1 {% if role != 'agent' %} --write-kubeconfig-mode="644" {% endif %}
   register: k3s_installation
 
 - name: Print k3s Installation Script command

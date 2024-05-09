@@ -8,7 +8,7 @@ nodes = [
 	{ :name => "s2",  :hostname => "server2",       :IPAddr => "192.168.56.12" },
 	{ :name => "s3",  :hostname => "server3",       :IPAddr => "192.168.56.13" },
 	# { :name => "lb",  :hostname => "loadBalancer",  :IPAddr => "192.168.56.21" },
-	# { :name => "a1",   :hostname => "agent",        :IPAddr => "192.168.56.31" },
+	{ :name => "a",   :hostname => "agent",        :IPAddr => "192.168.56.31" },
 	]
 
   config.vm.box = "gusztavvargadr/ubuntu-server-2204-lts"
