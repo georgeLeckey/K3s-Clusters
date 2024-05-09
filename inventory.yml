@@ -13,14 +13,14 @@ k3s_cluster:
               ansible_host: 192.168.56.12
             server3:
               ansible_host: 192.168.56.13
-    loadBalancers:
-      hosts:
-        nginx:
-          ansible_host: 192.168.56.21
-    agents:
-      hosts:
-        agent:
-          ansible_host: 192.168.56.31
+    # loadBalancers:
+    #   hosts:
+    #     nginx:
+    #       ansible_host: 192.168.56.21
+    # agents:
+    #   hosts:
+    #     agent:
+    #       ansible_host: 192.168.56.31
 
   # Required Vars
   vars:

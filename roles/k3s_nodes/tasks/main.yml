@@ -25,14 +25,6 @@
   - k3s_installed.stat.exists
   - inventory_hostname in groups['servers']
 
-- name: Uninstall k3s agent if already installed
-  ansible.builtin.shell: /usr/local/bin/k3s-agent-uninstall.sh
-  args:
-    executable: /bin/bash
-  when: 
-  - k3s_installed.stat.exists
-  - inventory_hostname in groups['agents']
-
 - name: Wait for First Server Node to be Ready
   ansible.builtin.shell:
     cmd: "kubectl get node {{ k3s_node_name }} -o=jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'"
@@ -45,6 +37,10 @@
   delegate_to: "{{ groups['server_initial'][0] }}"
   when: inventory_hostname != groups['server_initial'][0]
 
+- name: Debug K3s Node Ready
+  ansible.builtin.debug:
+    msg: "{{ k3s_node_ready }}"
+
 - name: Run k3s Installation Script
   ansible.builtin.shell:
     cmd: |
@@ -52,15 +48,9 @@
       {% if role == 'init' %}
       sh -s - server --cluster-init --tls-san=https://{{ tls_san }}:6443 \
       {% else %}
-      K3S_TOKEN=$(cat token) sh -s \
-      {% if role == 'agent' %}
-        - agent --server https://192.168.56.21:6443 \
-      {% elif role == 'add' %}
-       - server --server https://192.168.56.11:6443 --tls-san={{ tls_san }} \
+      K3S_TOKEN=$(cat token) sh -s - server --server https://192.168.56.11:6443 --tls-san={{ tls_san }} --node-external-ip=192.168.56.11 \
       {% endif %}
-       --node-external-ip=192.168.56.11 \
-      {% endif %}
-      --flannel-iface=eth1 {% if role != 'agent' %} --write-kubeconfig-mode="644" {% endif %}
+      --flannel-iface=eth1 --write-kubeconfig-mode="644"
   register: k3s_installation
 
 - name: Print k3s Installation Script command
@@ -71,3 +61,17 @@
   debug:
     msg: "K3s installed successfully"
   when: k3s_installation.rc == 0
+
+- name: Append export statement to .bashrc
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    line: "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml"
+    create: yes
+  become: yes
+  become_user: vagrant
+
+- name: Helm Install Script
+  shell: curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && chmod 700 get_helm.sh && ./get_helm.sh && rm get_helm.sh
+  args:
+    executable: /bin/bash
+  when: inventory_hostname == groups['server_initial'][0]

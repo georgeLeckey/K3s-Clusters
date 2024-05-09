@@ -31,18 +31,18 @@
         role: add
         tls_san: 192.168.56.100
 
-- hosts: loadBalancers
-  become: true
-  tasks:
-    - name: Install and Set Up nginx
-      include_role:
-        name: load_balancer
+# - hosts: loadBalancers
+#   become: true
+#   tasks:
+#     - name: Install and Set Up nginx
+#       include_role:
+#         name: load_balancer
 
-- hosts: agents
-  become: true
-  tasks:
-    - name: Initialise Agent Node
-      include_role:
-        name: k3s_nodes
-      vars:
-        role: agent
+# - hosts: agents
+#   become: true
+#   tasks:
+#     - name: Initialise Agent Node
+#       include_role:
+#         name: k3s_nodes
+#       vars:
+#         role: agent
