@@ -1,0 +1,4 @@
+k3s_params:
+  tls_san: "192.168.56.100"
+  flannel_iface: "eth1"
+  initial_server_ip: "192.168.56.11"

@@ -39,7 +39,8 @@
 
 - name: Debug K3s Node Ready
   ansible.builtin.debug:
-    msg: "{{ k3s_node_ready }}"
+    msg: 'First K3S Node Ready: "{{ k3s_node_ready.stdout }}"'
+  when: inventory_hostname != groups['server_initial'][0] 
 
 - name: Run k3s Installation Script
   ansible.builtin.shell:

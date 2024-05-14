@@ -8,13 +8,17 @@
 
 - hosts: server_initial
   become: true
+  vars_files:
+      - k3s_vars.yml
   tasks:
     - name: Initialise first server in cluster
       include_role:
         name: k3s_nodes
       vars:
-        role: init
-        tls_san: 192.168.56.100
+        node_type: 'initial'
+          tls_san: "{{k3s_params.tls_san }}"
+          flannel_iface: "{{k3s_params.flannel_iface }}"
+          initial_server_ip: "{{k3s_params.initial_server_ip }}"
     - name: Change Token Permissions
       ansible.builtin.file:
         path: /var/lib/rancher/k3s/server/token
@@ -28,8 +32,10 @@
       include_role:
         name: k3s_nodes
       vars:
-        role: add
-        tls_san: 192.168.56.100
+        node_type: 'additional'
+        tls_san: "{{k3s_params.tls_san }}"
+        flannel_iface: "{{k3s_params.flannel_iface }}"
+        initial_server_ip: "{{k3s_params.initial_server_ip }}"
 
 - hosts: agents
   become: true
@@ -38,4 +44,7 @@
       include_role:
         name: k3s_nodes
       vars:
-        role: agent
+        node_type: 'agent'
+        tls_san: "{{k3s_params.tls_san }}"
+        flannel_iface: "{{k3s_params.flannel_iface }}"
+        initial_server_ip: "{{k3s_params.initial_server_ip }}"
