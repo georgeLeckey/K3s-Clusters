@@ -1,0 +1,56 @@
+---
+- name: Load extra_vars
+  include_vars:
+    file: ../../extra_vars.yml
+
+- name: Fetch Token from Initial Server
+  ansible.builtin.synchronize: src=/var/lib/rancher/k3s/server/token dest=/home/vagrant    
+  delegate_to: "{{ groups['server_initial'][0] }}"
+  when: inventory_hostname != groups['server_initial'][0]
+
+- name: Set Token Variable
+  ansible.builtin.shell: cmd="K3s_TOKEN=$(cat /home/vagrant/token)"
+  delegate_to: "{{ inventory_hostname }}"
+  when: inventory_hostname != groups['server_initial'][0]
+
+- name: Wait for First Server Node to be Ready
+  ansible.builtin.shell:
+    cmd: "kubectl get node {{ k3s_node_name }} -o=jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'"
+  register: k3s_node_ready
+  until: k3s_node_ready.stdout == "True"
+  retries: 12
+  delay: 10
+  vars:
+    k3s_node_name: "server1"
+  delegate_to: "{{ groups['server_initial'][0] }}"
+  when: inventory_hostname != groups['server_initial'][0]
+
+- name: Debug K3s Node Ready
+  ansible.builtin.debug:
+    msg: 'First K3S Node Ready: "{{ k3s_node_ready.stdout }}"'
+  when: inventory_hostname != groups['server_initial'][0] 
+
+- name: Run k3s Installation Script - Additional
+  install_k3s:
+    node_type: 'additional'
+    tls_san: "{{ k3s_params.tls_san }}"
+    flannel_iface: "{{ k3s_params.flannel_iface }}"
+    initial_server_ip: "{{ k3s_params.initial_server_ip }}"
+  register: k3s_installation
+
+- name: Print k3s Installation Script command
+  ansible.builtin.debug:
+    msg: "{{ k3s_installation.stdout }}"
+
+- name: Check if K3s installation succeeded
+  debug:
+    msg: "K3s installed successfully"
+  when: k3s_installation.rc == 0
+
+- name: Append export statement to .bashrc
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    line: "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml"
+    create: yes
+  become: yes
+  become_user: vagrant

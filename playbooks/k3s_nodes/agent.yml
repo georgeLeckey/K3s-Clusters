@@ -1,0 +1,25 @@
+---
+- name: Load extra_vars
+  include_vars:
+    file: ../../extra_vars.yml
+
+- name: Run k3s Installation Script - Agent
+  install_k3s:
+    node_type: 'agent'
+    tls_san: "{{ k3s_params.tls_san }}"
+    flannel_iface: "{{ k3s_params.flannel_iface }}"
+    initial_server_ip: "{{ k3s_params.initial_server_ip }}"
+  register: k3s_installation
+
+- name: Check if K3s installation succeeded
+  debug:
+    msg: "K3s installed successfully"
+  when: k3s_installation.rc == 0
+
+- name: Append export statement to .bashrc
+  ansible.builtin.lineinfile:
+    path: ~/.bashrc
+    line: "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml"
+    create: yes
+  become: yes
+  become_user: vagrant

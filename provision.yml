@@ -3,48 +3,22 @@
   become: true
   tasks:
     - name: Run Prerequisites
-      include_role:
-        name: prerequisites
+      include_tasks: playbooks/prerequisites.yml
 
 - hosts: server_initial
   become: true
-  vars_files:
-      - k3s_vars.yml
   tasks:
     - name: Initialise first server in cluster
-      include_role:
-        name: k3s_nodes
-      vars:
-        node_type: 'initial'
-          tls_san: "{{k3s_params.tls_san }}"
-          flannel_iface: "{{k3s_params.flannel_iface }}"
-          initial_server_ip: "{{k3s_params.initial_server_ip }}"
-    - name: Change Token Permissions
-      ansible.builtin.file:
-        path: /var/lib/rancher/k3s/server/token
-        mode: '0644'
-      delegate_to: "{{ groups['server_initial'][0] }}"
+      include_tasks: playbooks/k3s_nodes/server_initial.yml
 
 - hosts: server_additional
   become: true
   tasks:
     - name: Initialise additional servers and add to cluster
-      include_role:
-        name: k3s_nodes
-      vars:
-        node_type: 'additional'
-        tls_san: "{{k3s_params.tls_san }}"
-        flannel_iface: "{{k3s_params.flannel_iface }}"
-        initial_server_ip: "{{k3s_params.initial_server_ip }}"
+      include_tasks: playbooks/k3s_nodes/server_additional.yml
 
 - hosts: agents
   become: true
   tasks:
     - name: Initialise Agent Node
-      include_role:
-        name: k3s_nodes
-      vars:
-        node_type: 'agent'
-        tls_san: "{{k3s_params.tls_san }}"
-        flannel_iface: "{{k3s_params.flannel_iface }}"
-        initial_server_ip: "{{k3s_params.initial_server_ip }}"
+      include_tasks: playbooks/k3s_nodes/agent.yml

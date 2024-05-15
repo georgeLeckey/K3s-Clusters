@@ -9,7 +9,7 @@ nodes = [
 	{ :name => "s3",  :hostname => "server3",       :IPAddr => "192.168.56.13" }
 	]
 
-  config.vm.box = "geerlingguy/rockylinux8"
+  config.vm.box = "gusztavvargadr/ubuntu-server-2204-lts"
   config.vm.synced_folder '.', '/vagrant', disabled: true
 
   nodes.each_with_index do |node, index|

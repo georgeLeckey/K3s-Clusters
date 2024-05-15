@@ -45,3 +45,16 @@
     line: "figlet -k $(hostname)"
     create: yes
   become: true
+
+- name: Check if k3s is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_installed
+
+- name: Uninstall k3s Server if already installed
+  ansible.builtin.shell: /usr/local/bin/k3s-uninstall.sh
+  args:
+    executable: /bin/bash
+  when: 
+  - k3s_installed.stat.exists
+  - inventory_hostname in groups['servers']
